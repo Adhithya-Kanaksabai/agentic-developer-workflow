@@ -84,5 +84,5 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 # Get absolute path to frontend directory assuming main.py is in backend/
-frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

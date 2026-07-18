@@ -20,10 +20,10 @@ export default function App() {
       const response = await fetch('http://127.0.0.1:8000/api/workflows/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: spec })
+        body: JSON.stringify({ prompt: spec })
       });
       const data = await response.json();
-      connectSSE(data.workflow_id);
+      connectSSE(data.job_id);
     } catch (e) {
       console.error(e);
       setStatus('Failed to start');
