@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Developer Workflow Engine</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Control Panel -->
+        <aside class="control-panel">
+            <div class="brand">
+                <span class="logo">⚙️</span>
+                <h1>Software Factory</h1>
+            </div>
+            
+            <form id="workflow-form" class="prompt-form">
+                <label for="prompt">Generate Software Spec & Code</label>
+                <textarea id="prompt" placeholder="e.g. Build a Python Todo API with FastAPI and SQLModel. Include database setup and mock endpoints." required></textarea>
+                
+                <button type="submit" id="run-btn">
+                    <span>Run Workflow</span>
+                    <span class="shortcut">⌘↵</span>
+                </button>
+            </form>
+        </aside>
+
+        <!-- Main Content Area / Workflow Visualization -->
+        <main class="workflow-viewer">
+            <header class="workflow-header">
+                <div class="title-area">
+                    <span class="badge" id="workflow-badge">Idle</span>
+                    <h2 id="workflow-title">No Active Job</h2>
+                    <span id="job-id-display" class="job-id"></span>
+                </div>
+            </header>
+
+            <section class="timeline-container">
+                <div class="timeline" id="timeline">
+                    <!-- Steps will be generated here -->
+                </div>
+            </section>
+
+            <!-- Artifacts / Code Inspector Panel -->
+            <section class="code-inspector" id="code-inspector">
+                <h3>Generated Artifacts</h3>
+                <div id="file-tabs" class="file-tabs">
+                    <!-- Tab buttons for each file -->
+                </div>
+                <pre class="code-display"><code id="code-block" class="language-python"># Code will appear here...</code></pre>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
