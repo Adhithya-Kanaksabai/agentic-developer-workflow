@@ -19,6 +19,9 @@ class WorkflowRuntime:
         workflow_id = str(uuid.uuid4())
         state = initial_state
         
+        from engine.llm_client import LLMClient
+        llm_client = LLMClient(self.event_bus, workflow_id)
+        
         print(f"\n[WorkflowRuntime] Starting workflow '{workflow.name}' (ID: {workflow_id})", flush=True)
         # Publish WorkflowStarted
         await self.event_bus.publish(WorkflowStarted(workflow_id=workflow_id))
@@ -30,7 +33,7 @@ class WorkflowRuntime:
             await self.event_bus.publish(StepStarted(workflow_id=workflow_id, step_name=step.name))
             
             # Execute step
-            state = await step.execute(state)
+            state = await step.execute(state, llm_client)
             
             # Get event payload generically
             payload = step.get_event_payload(state)

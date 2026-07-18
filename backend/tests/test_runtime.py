@@ -10,7 +10,7 @@ class MockSuccessStep(BaseStep):
     def __init__(self, name: str):
         super().__init__(name)
         
-    async def execute(self, state: WorkflowState) -> WorkflowState:
+    async def execute(self, state: WorkflowState, llm_client=None) -> WorkflowState:
         # Mutate the state slightly to prove execution
         state.logs.append(f"Executed {self.name}")
         return state

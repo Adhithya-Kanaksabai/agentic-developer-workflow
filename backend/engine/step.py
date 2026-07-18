@@ -7,7 +7,7 @@ class BaseStep(ABC):
         self.name = name
         
     @abstractmethod
-    async def execute(self, state: WorkflowState) -> WorkflowState:
+    async def execute(self, state: WorkflowState, llm_client: Any) -> WorkflowState:
         pass
 
     def get_event_payload(self, state: WorkflowState) -> Any:

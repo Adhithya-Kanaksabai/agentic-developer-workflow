@@ -79,3 +79,10 @@ async def stream_workflow(job_id: str):
             pass
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Get absolute path to frontend directory assuming main.py is in backend/
+frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")

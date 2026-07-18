@@ -1,7 +1,6 @@
 from typing import Any
 from engine.step import BaseStep
 from engine.state import WorkflowState
-from engine.llm_client import llm_complete
 
 class ReviewerStep(BaseStep):
     def __init__(self, name: str = "Reviewer"):
@@ -10,7 +9,7 @@ class ReviewerStep(BaseStep):
     def get_event_payload(self, state: WorkflowState) -> Any:
         return state.logs[-1] if state.logs else None
 
-    async def execute(self, state: WorkflowState) -> WorkflowState:
+    async def execute(self, state: WorkflowState, llm_client: Any) -> WorkflowState:
         if not state.spec or not state.artifacts:
             raise ValueError("Specification or Artifacts missing from state.")
 
@@ -30,7 +29,7 @@ class ReviewerStep(BaseStep):
             "or 'Review Fail' if not."
         )
 
-        review_result = await llm_complete([
+        review_result = await llm_client.complete([
             {"role": "system", "content": system_prompt}
         ])
 

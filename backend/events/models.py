@@ -21,3 +21,12 @@ class WorkflowCompleted(WorkflowEvent):
 
 class WorkflowFailed(WorkflowEvent):
     event_type: str = "WorkflowFailed"
+
+class LLMRequestStarted(WorkflowEvent):
+    event_type: str = "LLMRequestStarted"
+
+class LLMRequestFailed(WorkflowEvent):
+    event_type: str = "LLMRequestFailed"
+
+class LLMRequestFinished(WorkflowEvent):
+    event_type: str = "LLMRequestFinished"

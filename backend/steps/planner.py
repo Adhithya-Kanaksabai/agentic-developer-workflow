@@ -2,7 +2,7 @@ import json
 from typing import Any
 from engine.step import BaseStep
 from engine.state import WorkflowState, Specification
-from engine.llm_client import llm_complete, extract_json
+from engine.llm_client import extract_json
 
 class PlannerStep(BaseStep):
     def __init__(self, name: str = "Planner"):
@@ -11,24 +11,18 @@ class PlannerStep(BaseStep):
     def get_event_payload(self, state: WorkflowState) -> Any:
         return state.spec.model_dump() if state.spec else None
 
-    async def execute(self, state: WorkflowState) -> WorkflowState:
-        system_prompt = (
-            "You are a technical planner agent. Analyze the user request and output a Specification as JSON.\n"
-            "The JSON must have EXACTLY these keys:\n"
-            '- "description": string describing the goal.\n'
-            '- "tasks": list of strings detailing subtasks.\n'
-            '- "files_to_create": list of filename strings.\n'
-            '- "constraints": list of constraint strings.\n'
-            "Output ONLY the raw JSON object. No markdown, no code fences, no extra text."
-        )
-
-        content = await llm_complete([
-            {"role": "system", "content": system_prompt},
+    async def execute(self, state: WorkflowState, llm_client: Any) -> WorkflowState:
+        print("Running Planner...", flush=True)
+        
+        messages = [
+            {"role": "system", "content": "You are a senior software architect. Given a user prompt, generate a technical specification. The specification MUST be valid JSON conforming exactly to the following structure:\n\n{\n  \"description\": \"Overall description of what to build\",\n  \"tasks\": [\"Task 1\", \"Task 2\"],\n  \"files_to_create\": [\"file1.py\", \"file2.js\"],\n  \"constraints\": [\"Constraint 1\", \"Constraint 2\"]\n}\n\nDo not include any explanation outside of the JSON block."},
             {"role": "user", "content": state.user_prompt}
-        ])
+        ]
+        
+        content = await llm_client.complete(messages=messages)
 
         raw = extract_json(content)
-        spec_dict = json.loads(raw)
+        spec_dict = json.loads(raw, strict=False)
         state.spec = Specification(**spec_dict)
         state.logs.append("Planner completed: Technical specification generated.")
         return state

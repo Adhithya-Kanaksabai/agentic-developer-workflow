@@ -42,45 +42,63 @@ def extract_json(text: str) -> str:
     return text
 
 
-async def llm_complete(messages: list[dict], **kwargs) -> str:
-    """
-    Call the LLM with automatic fallback across free models.
-    Returns the response content string.
-    Raises RuntimeError if all models fail.
-    """
-    models = get_model_list()
-    last_error = None
+class LLMClient:
+    def __init__(self, event_bus, workflow_id: str):
+        self.event_bus = event_bus
+        self.workflow_id = workflow_id
+        
+    async def complete(self, messages: list[dict], **kwargs) -> str:
+        from events.models import LLMRequestStarted, LLMRequestFailed, LLMRequestFinished
+        
+        models = get_model_list()
+        last_error = None
 
-    for model in models:
-        for attempt in range(2):  # 2 attempts per model before moving on
-            try:
-                print(f"[LLM Client] Attempting completion with model '{model}' (attempt {attempt+1})...", flush=True)
-                response = await acompletion(
-                    model=model,
-                    messages=messages,
-                    **kwargs,
-                )
-                print(f"[LLM Client] Success with model '{model}'", flush=True)
-                return response.choices[0].message.content
-            except (RateLimitError,) as e:
-                print(f"[LLM Client] RateLimitError for model '{model}'. Retrying or falling back...", flush=True)
-                last_error = e
-                wait = 5 * (attempt + 1)
-                await asyncio.sleep(wait)
-                continue
-            except (NotFoundError,) as e:
-                print(f"[LLM Client] NotFoundError for model '{model}'. Skipping model...", flush=True)
-                # Model doesn't exist, skip immediately
-                last_error = e
-                break
-            except Exception as e:
-                print(f"[LLM Client] Unexpected error for model '{model}': {e}", flush=True)
-                last_error = e
-                if attempt == 1:
+        for model in models:
+            for attempt in range(2):
+                try:
+                    await self.event_bus.publish(LLMRequestStarted(
+                        workflow_id=self.workflow_id,
+                        payload={"model": model, "attempt": attempt + 1}
+                    ))
+                    
+                    response = await acompletion(
+                        model=model,
+                        messages=messages,
+                        **kwargs,
+                    )
+                    
+                    tokens = getattr(response.usage, "total_tokens", 0) if hasattr(response, "usage") else 0
+                    
+                    await self.event_bus.publish(LLMRequestFinished(
+                        workflow_id=self.workflow_id,
+                        payload={"model": model, "total_tokens": tokens}
+                    ))
+                    
+                    return response.choices[0].message.content
+                except (RateLimitError,) as e:
+                    await self.event_bus.publish(LLMRequestFailed(
+                        workflow_id=self.workflow_id,
+                        payload={"model": model, "error": "RateLimitError"}
+                    ))
+                    last_error = e
+                    wait = 5 * (attempt + 1)
+                    await asyncio.sleep(wait)
+                    continue
+                except (NotFoundError,) as e:
+                    await self.event_bus.publish(LLMRequestFailed(
+                        workflow_id=self.workflow_id,
+                        payload={"model": model, "error": "NotFoundError"}
+                    ))
+                    last_error = e
                     break
-                await asyncio.sleep(2)
-        # If we got here via RateLimitError on both attempts, try next model
+                except Exception as e:
+                    await self.event_bus.publish(LLMRequestFailed(
+                        workflow_id=self.workflow_id,
+                        payload={"model": model, "error": str(e)}
+                    ))
+                    last_error = e
+                    if attempt == 1:
+                        break
+                    await asyncio.sleep(2)
 
-    raise RuntimeError(
-        f"All LLM models failed. Last error: {last_error}"
-    )
+        raise RuntimeError(f"All LLM models failed. Last error: {last_error}")
