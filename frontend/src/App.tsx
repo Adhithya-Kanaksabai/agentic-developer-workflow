@@ -17,7 +17,7 @@ export default function App() {
     setBrainActivity([]);
     
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/workflows/run', {
+      const response = await fetch('/api/workflows/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: spec })
@@ -32,7 +32,7 @@ export default function App() {
   };
 
   const connectSSE = (workflowId: string) => {
-    const eventSource = new EventSource(`http://127.0.0.1:8000/api/workflows/${workflowId}/stream`);
+    const eventSource = new EventSource(`/api/workflows/${workflowId}/stream`);
     
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -65,10 +65,10 @@ export default function App() {
           setBrainActivity(prev => {
             const stepGroup = prev.find(g => g.step === data.step_name);
             if (stepGroup) {
-              const updatedRequests = [...stepGroup.requests, { id: data.model_name + Date.now(), model: data.model_name, status: 'running' }];
+              const updatedRequests = [...stepGroup.requests, { id: data.payload?.model + Date.now(), model: data.payload?.model, status: 'running' }];
               return prev.map(g => g.step === data.step_name ? { ...g, requests: updatedRequests } : g);
             } else {
-              return [...prev, { step: data.step_name, requests: [{ id: data.model_name + Date.now(), model: data.model_name, status: 'running' }] }];
+              return [...prev, { step: data.step_name, requests: [{ id: data.payload?.model + Date.now(), model: data.payload?.model, status: 'running' }] }];
             }
           });
           break;
@@ -76,7 +76,7 @@ export default function App() {
           setBrainActivity(prev => prev.map(g => {
             if (g.step === data.step_name) {
               const lastReq = g.requests[g.requests.length - 1];
-              return { ...g, requests: g.requests.map((r: any) => r.id === lastReq.id ? { ...r, status: 'failed', error: data.error } : r) };
+              return { ...g, requests: g.requests.map((r: any) => r.id === lastReq.id ? { ...r, status: 'failed', error: data.payload?.error } : r) };
             }
             return g;
           }));

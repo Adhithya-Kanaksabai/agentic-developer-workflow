@@ -33,6 +33,7 @@ class WorkflowRuntime:
             await self.event_bus.publish(StepStarted(workflow_id=workflow_id, step_name=step.name))
             
             # Execute step
+            llm_client.current_step = step.name
             state = await step.execute(state, llm_client)
             
             # Get event payload generically

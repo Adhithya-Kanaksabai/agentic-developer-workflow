@@ -46,6 +46,7 @@ class LLMClient:
     def __init__(self, event_bus, workflow_id: str):
         self.event_bus = event_bus
         self.workflow_id = workflow_id
+        self.current_step = None
         
     async def complete(self, messages: list[dict], **kwargs) -> str:
         from events.models import LLMRequestStarted, LLMRequestFailed, LLMRequestFinished
@@ -58,6 +59,7 @@ class LLMClient:
                 try:
                     await self.event_bus.publish(LLMRequestStarted(
                         workflow_id=self.workflow_id,
+                        step_name=self.current_step,
                         payload={"model": model, "attempt": attempt + 1}
                     ))
                     
@@ -71,6 +73,7 @@ class LLMClient:
                     
                     await self.event_bus.publish(LLMRequestFinished(
                         workflow_id=self.workflow_id,
+                        step_name=self.current_step,
                         payload={"model": model, "total_tokens": tokens}
                     ))
                     
@@ -78,6 +81,7 @@ class LLMClient:
                 except (RateLimitError,) as e:
                     await self.event_bus.publish(LLMRequestFailed(
                         workflow_id=self.workflow_id,
+                        step_name=self.current_step,
                         payload={"model": model, "error": "RateLimitError"}
                     ))
                     last_error = e
@@ -87,6 +91,7 @@ class LLMClient:
                 except (NotFoundError,) as e:
                     await self.event_bus.publish(LLMRequestFailed(
                         workflow_id=self.workflow_id,
+                        step_name=self.current_step,
                         payload={"model": model, "error": "NotFoundError"}
                     ))
                     last_error = e
@@ -94,6 +99,7 @@ class LLMClient:
                 except Exception as e:
                     await self.event_bus.publish(LLMRequestFailed(
                         workflow_id=self.workflow_id,
+                        step_name=self.current_step,
                         payload={"model": model, "error": str(e)}
                     ))
                     last_error = e
